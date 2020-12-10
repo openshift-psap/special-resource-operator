@@ -81,6 +81,9 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 		return reconcile.Result{}, err
 	}
 
+	// set specialResourcesCreated metric to the number of specialresources
+	setSpecialResourcesCreated(len(specialresources.Items))
+
 	for _, r.parent = range specialresources.Items {
 
 		//log = r.Log.WithValues("specialresource", r.parent.Name)
