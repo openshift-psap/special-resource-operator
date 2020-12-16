@@ -41,29 +41,19 @@ var _ = ginkgo.Describe("[basic][available] Special Resource Operator availabili
 	})
 
 	// Check that operator is reporting status to ClusterOperator
-	ginkgo.It(fmt.Sprintf("clusteroperator/special-resource-operator available"), func() {
+	ginkgo.It(fmt.Sprintf("clusteroperator/special-resource-operator available and not degraded"), func() {
 		ginkgo.By(fmt.Sprintf("wait for clusteroperator/special-resource-operator available"))
-		err := wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
-			co, err := cs.ClusterOperators().Get(context.TODO(), "special-resource-operator", metav1.GetOptions{})
-			if err != nil {
-				explain = err.Error()
-				return false, nil
-			}
+		err := WaitForClusterOperatorCondition(cs, pollInterval, waitDuration, configv1.OperatorAvailable, configv1.ConditionTrue)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
 
-			for _, cond := range co.Status.Conditions {
-				if cond.Type == configv1.OperatorAvailable &&
-					cond.Status == configv1.ConditionTrue {
-					return true, nil
-				}
-			}
-			return false, nil
-		})
+		ginkgo.By(fmt.Sprintf("wait for clusteroperator/special-resource-operator not degraded"))
+		err = WaitForClusterOperatorCondition(cs, pollInterval, waitDuration, configv1.OperatorDegraded, configv1.ConditionFalse)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
 	})
 
-	// Check that operator is reporting upgradeable
-	ginkgo.It(fmt.Sprintf("clusteroperator/special-resource-operator upgradeable"), func() {
-		ginkgo.By(fmt.Sprintf("wait for clusteroperator/special-resource-operator upgradeable"))
+	// Check that operator is setting tue upgradeable condition
+	ginkgo.It(fmt.Sprintf("clusteroperator/special-resource-operator upgradeable condition set"), func() {
+		ginkgo.By(fmt.Sprintf("wait for clusteroperator/special-resource-operator upgradeable to be true or false"))
 		err := wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
 			co, err := cs.ClusterOperators().Get(context.TODO(), "special-resource-operator", metav1.GetOptions{})
 			if err != nil {
@@ -73,7 +63,7 @@ var _ = ginkgo.Describe("[basic][available] Special Resource Operator availabili
 
 			for _, cond := range co.Status.Conditions {
 				if cond.Type == configv1.OperatorUpgradeable &&
-					cond.Status == configv1.ConditionTrue {
+					cond.Status != configv1.ConditionUnknown {
 					return true, nil
 				}
 			}
