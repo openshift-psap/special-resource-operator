@@ -51,24 +51,5 @@ var _ = ginkgo.Describe("[basic][available] Special Resource Operator availabili
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
 	})
 
-	// Check that operator is setting tue upgradeable condition
-	ginkgo.It(fmt.Sprintf("clusteroperator/special-resource-operator upgradeable condition set"), func() {
-		ginkgo.By(fmt.Sprintf("wait for clusteroperator/special-resource-operator upgradeable to be true or false"))
-		err := wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
-			co, err := cs.ClusterOperators().Get(context.TODO(), "special-resource-operator", metav1.GetOptions{})
-			if err != nil {
-				explain = err.Error()
-				return false, nil
-			}
-
-			for _, cond := range co.Status.Conditions {
-				if cond.Type == configv1.OperatorUpgradeable &&
-					cond.Status != configv1.ConditionUnknown {
-					return true, nil
-				}
-			}
-			return false, nil
-		})
-		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
-	})
+	// TODO Check that operator is setting tue upgradeable condition
 })
