@@ -7,6 +7,7 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+	"github.com/openshift-psap/special-resource-operator/test/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -20,6 +21,8 @@ var _ = ginkgo.Describe("[basic][available] Special Resource Operator availabili
 		pollInterval = 5 * time.Second
 		waitDuration = 5 * time.Minute
 	)
+
+	cs := framework.NewClientSet()
 
 	var explain string
 
@@ -51,5 +54,5 @@ var _ = ginkgo.Describe("[basic][available] Special Resource Operator availabili
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
 	})
 
-	// TODO Check that operator is setting tue upgradeable condition
+	// TODO Check that operator is setting the upgradeable condition
 })

@@ -7,10 +7,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/openshift-psap/special-resource-operator/pkg/color"
 	"github.com/openshift-psap/special-resource-operator/test/framework"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/pkg/errors"
+
 	//srov1beta1 "github.com/openshift-psap/special-resource-operator/api/v1beta1"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+var (
+	log = ctrl.Log.WithName(color.Print("deploy", color.Blue))
 )
 
 // WaitForClusterOperatorCondition blocks until the SRO ClusterOperator status
