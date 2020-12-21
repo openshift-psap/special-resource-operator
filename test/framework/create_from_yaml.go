@@ -70,7 +70,7 @@ func UpdateFromYAML(yamlFile []byte, cl client.Client) {
 		err := cl.Update(context.TODO(), obj)
 		exit.OnError(err)
 
-		log.Info("Created", "Kind", obj.GetKind(), "Name", obj.GetName())
+		log.Info("Updated", "Kind", obj.GetKind(), "Name", obj.GetName())
 	}
 }
 
