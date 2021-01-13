@@ -74,6 +74,23 @@ func UpdateFromYAML(yamlFile []byte, cl client.Client) {
 	}
 }
 
+// Don't use this to delete the CRD or undeploy the operator -- CR deletion will fail
+func DeleteFromYAMLWithCR(yamlFile []byte, cl client.Client) {
+
+	scanner := yamlutil.NewYAMLScanner(yamlFile)
+
+	for scanner.Scan() {
+		yamlSpec := scanner.Bytes()
+
+		obj := getObjFromYAMLSpec(yamlSpec)
+
+		err := cl.Delete(context.TODO(), obj)
+		exit.OnError(err)
+
+		log.Info("Deleted", "Kind", obj.GetKind(), "Name", obj.GetName())
+	}
+}
+
 func DeleteFromYAML(yamlFile []byte, cl client.Client) {
 
 	scanner := yamlutil.NewYAMLScanner(yamlFile)

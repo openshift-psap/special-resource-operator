@@ -30,6 +30,8 @@ spec:
 
       ARG RELEASEVER
 
+      RUN yum list installed |  grep kernel
+
       RUN yum -y install --releasever=${RELEASEVER} wget git --setopt=install_weak_deps=False --best
 
       

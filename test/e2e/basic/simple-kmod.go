@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo"
@@ -11,13 +12,15 @@ import (
 	"github.com/openshift-psap/special-resource-operator/test/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var _ = ginkgo.Describe("[basic][simple-kmod] create and deploy simple-kmod", func() {
 	const (
 		pollInterval = 5 * time.Second
-		waitDuration = 5 * time.Minute
+		waitDuration = 8 * time.Minute
 	)
 
 	cs := framework.NewClientSet()
@@ -26,7 +29,7 @@ var _ = ginkgo.Describe("[basic][simple-kmod] create and deploy simple-kmod", fu
 	var explain string
 
 	// Check that operator deployment has 1 available pod
-	ginkgo.It(fmt.Sprintf("Can deploy simple-kmod"), func() {
+	ginkgo.It(fmt.Sprintf("Can create driver-container-base and deploy simple-kmod"), func() {
 
 		buffer, err := ioutil.ReadFile("../../../config/recipes/simple-kmod/0000-simple-kmod-cr.yaml")
 		if err != nil {
@@ -36,37 +39,90 @@ var _ = ginkgo.Describe("[basic][simple-kmod] create and deploy simple-kmod", fu
 
 		ginkgo.By(fmt.Sprintf("driver-container-base is completed"))
 		err = wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
-			driverContainerBase, err := cs.("simple-kmod").List(context.TODO(), metav1.ListOptions{})
+
+			dcbPods, err := cs.Pods("driver-container-base").List(context.TODO(), metav1.ListOptions{})
+
+			if len(dcbPods.Items) < 1 {
+				return false, nil
+			}
+
+			driverContainerBase, err := cs.Pods("driver-container-base").Get(context.TODO(), "driver-container-base", metav1.GetOptions{})
+
 			if err != nil {
-				return false, fmt.Errorf("Couldn't get simple-kmod DaemonSet: %v", err)
+				return false, fmt.Errorf("Couldn't get driver-container-base pod, %v", err)
 			}
 
-			// TODO TEMPORARY HACK
-			if len(skDaemonSets.Items) == 1 {
-				return true, nil
-			}
-
-			return false, nil
-		})
-
-		ginkgo.By(fmt.Sprintf("simple-kmod is ready"))
-
-		//How can we check if the module is actually loaded... or check logs of simple-kmod??
-
-		err = wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
-			skDaemonSets, err := cs.DaemonSets("simple-kmod").List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return false, fmt.Errorf("Couldn't get simple-kmod DaemonSet: %v", err)
-			}
-
-			//TEMPORARY HACK
-			if len(skDaemonSets.Items) == 1 {
+			if driverContainerBase.Status.Phase == "Succeeded" {
 				return true, nil
 			}
 
 			return false, nil
 		})
 		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
+
+		ginkgo.By(fmt.Sprintf("simple-kmod is ready"))
+		err = wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
+			skDaemonSets, err := cs.DaemonSets("simple-kmod").List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return false, fmt.Errorf("Couldn't get simple-kmod DaemonSet: %v", err)
+			}
+
+			if len(skDaemonSets.Items) == 1 {
+				if strings.HasPrefix(skDaemonSets.Items[0].ObjectMeta.Name, "simple-kmod-driver-container") &&
+					skDaemonSets.Items[0].Status.DesiredNumberScheduled == skDaemonSets.Items[0].Status.NumberReady {
+					return true, nil
+				}
+			}
+			return false, nil
+		})
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
+
+		// Now check if module is actually running
+
+		//get a list of worker nodes
+
+		ginkgo.By("getting a list of worker nodes")
+		nodes, err := GetNodesByRole(cs, "worker")
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		gomega.Expect(len(nodes)).NotTo(gomega.BeZero(), "number of worker nodes is 0")
+		node := nodes[0]
+
+		//get driver container pod on worker node
+		ginkgo.By(fmt.Sprintf("getting a simple-kmod-driver-container Pod running on node %s", node.Name))
+		listOptions := metav1.ListOptions{
+			FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node.Name}).String(),
+			LabelSelector: labels.SelectorFromSet(labels.Set{"app": "simple-kmod-driver-container-rhel8"}).String(),
+		}
+
+		pod, err := GetPodForNode(cs, &node, "simple-kmod", listOptions)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		//run command in pod
+		ginkgo.By("Ensuring that the simple-kmod is loaded")
+		cmd := []string{"/bin/sh", "-c", "lsmod | grep -o simple_kmod"}
+		valExp := "simple_kmod"
+		_, err = WaitForCmdOutputInPod(pollInterval, waitDuration, pod, &valExp, true, cmd...)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+		ginkgo.By(fmt.Sprintf("deleting simple-kmod"))
+		framework.DeleteFromYAMLWithCR(buffer, cl)
+		err = wait.PollImmediate(pollInterval, waitDuration, func() (bool, error) {
+			namespaces, err := cs.Namespaces().List(context.TODO(), metav1.ListOptions{})
+			if err != nil {
+				return false, fmt.Errorf("Couldn't get namespaces: %v", err)
+			}
+
+			for _, n := range namespaces.Items {
+				if n.ObjectMeta.Name == "simple-kmod" {
+					return false, nil
+				}
+			}
+
+			return true, nil
+
+		})
+		gomega.Expect(err).NotTo(gomega.HaveOccurred(), explain)
+
 	})
 
 })
