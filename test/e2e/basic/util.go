@@ -45,14 +45,14 @@ func GetNodesByRole(cs *framework.ClientSet, role string) ([]corev1.Node, error)
 func GetPodForNode(cs *framework.ClientSet, node *corev1.Node, ns string, listOptions metav1.ListOptions) (*corev1.Pod, error) {
 	podList, err := cs.Pods(ns).List(context.TODO(), listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get a list of Tuned Pods: %v", err)
+		return nil, fmt.Errorf("couldn't get a list of Pods with the given listOptions: %v", err)
 	}
 
 	if len(podList.Items) != 1 {
 		if len(podList.Items) == 0 {
-			return nil, fmt.Errorf("failed to find a Tuned Pod for node %s", node.Name)
+			return nil, fmt.Errorf("couldn't find any Pods matching the listOptions on the node %s", node.Name)
 		}
-		return nil, fmt.Errorf("too many (%d) Tuned Pods for node %s", len(podList.Items), node.Name)
+		return nil, fmt.Errorf("too many (%d) matching Pods for node %s", len(podList.Items), node.Name)
 	}
 	return &podList.Items[0], nil
 }
