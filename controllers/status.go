@@ -59,7 +59,7 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusGetOrCreate() error {
 
 	co, err = r.ClusterOperators().Create(context.TODO(), co, metav1.CreateOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to create clusteroperator %s: %v", co.Name, err)
+		return errs.Wrap(err, "Failed to create ClusterOperator " + co.Name)
 	}
 	co.DeepCopyInto(&r.clusterOperator)
 	return nil
