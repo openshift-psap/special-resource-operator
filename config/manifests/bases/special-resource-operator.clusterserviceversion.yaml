@@ -50,6 +50,8 @@ spec:
   maintainers:
   - email: zkaiser@redhat.com
     name: Zvonko Kaiser
+  - email: dagray@redhat.com
+    name: David Gray
   maturity: alpha
   provider:
     name: Red Hat
