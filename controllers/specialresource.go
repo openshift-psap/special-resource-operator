@@ -12,8 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+const specialresourceFinalizer = "finalizer.sro.openshift.io"
 
 // GetName of the special resource operator
 func (r *SpecialResourceReconciler) GetName() string {
@@ -72,7 +75,7 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 	err := r.List(context.TODO(), specialresources, opts...)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
+			// Requested object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			return reconcile.Result{}, nil
@@ -127,6 +130,36 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 		//log = r.Log.WithValues("specialresource", r.parent.Name)
 		log = r.Log.WithName(color.Print(r.parent.Name, color.Green))
 		log.Info("Reconciling")
+
+		isMarkedToBeDeleted := r.parent.GetDeletionTimestamp() != nil
+		if isMarkedToBeDeleted {
+			if contains(r.parent.GetFinalizers(), specialresourceFinalizer) {
+				// Run finalization logic for specialresource
+				if err := r.finalizeSpecialResource(r.parent); err != nil {
+					log.Info("Finalization logic failed.", "error", fmt.Sprintf("%v", err))
+					// TODO return err?
+					return reconcile.Result{}, nil
+				}
+
+				controllerutil.RemoveFinalizer(&r.parent, specialresourceFinalizer)
+				err := r.Update(context.TODO(), &r.parent)
+				if err != nil {
+					log.Info("Could not remove finalizer after running finalization logic", "error", fmt.Sprintf("%v", err))
+					// TODO return err?
+					return reconcile.Result{}, nil
+				}
+			}
+			return reconcile.Result{}, nil
+		}
+
+		// Add a finalizer to CR if it does not already have one
+		if !contains(r.parent.GetFinalizers(), specialresourceFinalizer) {
+			if err := r.addFinalizer(r.parent); err != nil {
+				log.Info("Failed to add finalizer", "error", fmt.Sprintf("%v", err))
+				/// TODO return err?
+				return reconcile.Result{}, nil
+			}
+		}
 
 		r.specialresource = r.parent
 		if err := ReconcileHardwareConfigurations(r); err != nil {
@@ -183,4 +216,38 @@ func createSpecialResourceFrom(r *SpecialResourceReconciler, name string) (srov1
 	}
 
 	return specialresource, errs.New("Created new SpecialResource we need to Reconcile")
+}
+
+func (r *SpecialResourceReconciler) finalizeSpecialResource(toFinalize srov1beta1.SpecialResource) error {
+	// TODO(user): Add the cleanup steps that the operator
+	// needs to do before the CR can be deleted. Examples
+	// of finalizers include performing backups and deleting
+	// resources that are not owned by this CR, like a PVC.
+	// TODO Will this already be happening? log = r.Log.WithName(color.Print(toFinalize.Name, color.Green))
+	log.Info("Successfully finalized SpecialResource")
+	return nil
+}
+
+func (r *SpecialResourceReconciler) addFinalizer(toFinalize srov1beta1.SpecialResource) error {
+	//log = r.Log.WithName(color.Print(toFinalize.Name, color.Green))
+	log.Info("Adding finalizer to special resource")
+	controllerutil.AddFinalizer(&toFinalize, specialresourceFinalizer)
+
+	// Update CR
+	err := r.Update(context.TODO(), &toFinalize)
+	if err != nil {
+		log.Info("Adding finalizer failed", "error", fmt.Sprintf("%v", err))
+		return err
+	}
+	return nil
+}
+
+// This should probably be moved to another file
+func contains(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
