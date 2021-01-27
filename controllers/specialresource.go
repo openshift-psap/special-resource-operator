@@ -223,7 +223,6 @@ func (r *SpecialResourceReconciler) finalizeSpecialResource(toFinalize srov1beta
 	// needs to do before the CR can be deleted. Examples
 	// of finalizers include performing backups and deleting
 	// resources that are not owned by this CR, like a PVC.
-	// TODO Will this already be happening? log = r.Log.WithName(color.Print(toFinalize.Name, color.Green))
 	log.Info("Successfully finalized SpecialResource")
 	return nil
 }

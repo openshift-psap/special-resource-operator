@@ -15,10 +15,10 @@ spec:
       interval: 30s
       tlsConfig:
         caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
-        serverName: special-resource-operator-controller-manager-metrics-service.openshift-sro.svc
+        serverName: special-resource-controller-manager-metrics-service.openshift-special-resource-operator.svc
   namespaceSelector:
     matchNames:
-      - openshift-sro
+      - openshift-special-resource-operator
   selector:
     matchLabels:
       control-plane: controller-manager
