@@ -59,7 +59,7 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusGetOrCreate() error {
 
 	co, err = r.ClusterOperators().Create(context.TODO(), co, metav1.CreateOptions{})
 	if err != nil {
-		return errs.Wrap(err, "Failed to create ClusterOperator " + co.Name)
+		return errs.Wrap(err, "Failed to create ClusterOperator "+co.Name)
 	}
 	co.DeepCopyInto(&r.clusterOperator)
 	return nil
@@ -97,9 +97,9 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusUpdate() error {
 	return nil
 }
 
-// ReportSpecialResourcesStatus Depdending on what error we're getting from the
+// ReportSpecialResourcesStatus Depending on what error we're getting from the
 // reconciliation loop we're updating the status
-// nil -> All things good and default conditiions can be applied
+// nil -> All things good and default conditions can be applied
 func ReportSpecialResourcesStatus(r *SpecialResourceReconciler, req ctrl.Request) (ctrl.Result, error) {
 
 	conditions := conditionsNotAvailableProgressingNotDegraded(
@@ -119,6 +119,8 @@ func ReportSpecialResourcesStatus(r *SpecialResourceReconciler, req ctrl.Request
 		return reconcile.Result{Requeue: true}, nil
 	}
 
+	//Reconcile all specialresources
+	//TODO err not used here? Do we need to check this?
 	ctrlResult, err := ReconcilerSpecialResources(r, req)
 
 	log = r.Log.WithName(color.Print("status", color.Blue))

@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	srov1beta1 "github.com/openshift-psap/special-resource-operator/api/v1beta1"
 	"github.com/openshift-psap/special-resource-operator/pkg/assets"
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
 	errs "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -85,7 +87,7 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 	}
 
 	// set specialResourcesCreated metric to the number of specialresources
-	setSpecialResourcesCreated(len(specialresources.Items))
+	setMetricSpecialResourcesCreated(len(specialresources.Items))
 
 	for _, r.parent = range specialresources.Items {
 
@@ -127,22 +129,21 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 			}
 		}
 
-		//log = r.Log.WithValues("specialresource", r.parent.Name)
-		log = r.Log.WithName(color.Print(r.parent.Name, color.Green))
+		log = r.Log.WithName(color.Print(r.specialresource.Name, color.Green))
 		log.Info("Reconciling")
 
-		isMarkedToBeDeleted := r.parent.GetDeletionTimestamp() != nil
+		isMarkedToBeDeleted := r.specialresource.GetDeletionTimestamp() != nil
 		if isMarkedToBeDeleted {
-			if contains(r.parent.GetFinalizers(), specialresourceFinalizer) {
+			if contains(r.specialresource.GetFinalizers(), specialresourceFinalizer) {
 				// Run finalization logic for specialresource
-				if err := r.finalizeSpecialResource(r.parent); err != nil {
+				if err := r.finalizeSpecialResource(r.specialresource); err != nil {
 					log.Info("Finalization logic failed.", "error", fmt.Sprintf("%v", err))
 					// TODO return err?
 					return reconcile.Result{}, nil
 				}
 
-				controllerutil.RemoveFinalizer(&r.parent, specialresourceFinalizer)
-				err := r.Update(context.TODO(), &r.parent)
+				controllerutil.RemoveFinalizer(&r.specialresource, specialresourceFinalizer)
+				err := r.Update(context.TODO(), &r.specialresource)
 				if err != nil {
 					log.Info("Could not remove finalizer after running finalization logic", "error", fmt.Sprintf("%v", err))
 					// TODO return err?
@@ -153,8 +154,8 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 		}
 
 		// Add a finalizer to CR if it does not already have one
-		if !contains(r.parent.GetFinalizers(), specialresourceFinalizer) {
-			if err := r.addFinalizer(r.parent); err != nil {
+		if !contains(r.specialresource.GetFinalizers(), specialresourceFinalizer) {
+			if err := r.addFinalizer(r.specialresource); err != nil {
 				log.Info("Failed to add finalizer", "error", fmt.Sprintf("%v", err))
 				/// TODO return err?
 				return reconcile.Result{}, nil
@@ -197,7 +198,7 @@ func createSpecialResourceFrom(r *SpecialResourceReconciler, name string) (srov1
 	crfile := assets.GetFrom(crpath)
 
 	if len(crfile) == 0 {
-		exit.OnError(errs.New("Could not read CR " + name + "from lokal path"))
+		exit.OnError(errs.New("Could not read CR " + name + "from local path"))
 	}
 
 	if len(crfile) > 1 {
@@ -223,12 +224,33 @@ func (r *SpecialResourceReconciler) finalizeSpecialResource(toFinalize srov1beta
 	// needs to do before the CR can be deleted. Examples
 	// of finalizers include performing backups and deleting
 	// resources that are not owned by this CR, like a PVC.
-	log.Info("Successfully finalized SpecialResource")
+	var err error
+	var config *unstructured.Unstructured
+	var manifests map[string]interface{}
+	var found bool
+
+	config, err = getHardwareConfiguration(r)
+
+	manifests, found, err = unstructured.NestedMap(config.Object, "data")
+	exit.OnErrorOrNotFound(found, err)
+
+	states := make([]string, 0, len(manifests))
+	for key := range manifests {
+		states = append(states, key)
+	}
+
+	sort.Strings(states)
+
+	for _, state := range states {
+		log.Info("Deleting metric for", "state:", state)
+		deleteMetricCompleteStates(r.specialresource.Name, state)
+	}
+
+	log.Info("Successfully finalized", "SpecialResource:", toFinalize.Name)
 	return nil
 }
 
 func (r *SpecialResourceReconciler) addFinalizer(toFinalize srov1beta1.SpecialResource) error {
-	//log = r.Log.WithName(color.Print(toFinalize.Name, color.Green))
 	log.Info("Adding finalizer to special resource")
 	controllerutil.AddFinalizer(&toFinalize, specialresourceFinalizer)
 

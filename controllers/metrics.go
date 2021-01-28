@@ -28,11 +28,15 @@ var (
 	)
 )
 
-func setCompletedState(specialResource string, state string, value int) {
+func setMetricCompletedState(specialResource string, state string, value int) {
 	completedStates.WithLabelValues(specialResource, state).Set(float64(value))
 }
 
-func setSpecialResourcesCreated(value int) {
+func deleteMetricCompleteStates(specialResource string, state string) {
+	completedStates.DeleteLabelValues(specialResource, state)
+}
+
+func setMetricSpecialResourcesCreated(value int) {
 	specialResourcesCreated.Set(float64(value))
 }
 
@@ -44,4 +48,3 @@ func init() {
 	)
 
 }
-
