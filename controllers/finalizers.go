@@ -10,6 +10,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const specialresourceFinalizer = "finalizer.sro.openshift.io"
+
 func reconcileFinalizers(r *SpecialResourceReconciler) error {
 	if contains(r.specialresource.GetFinalizers(), specialresourceFinalizer) {
 		// Run finalization logic for specialresource

@@ -15,8 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-const specialresourceFinalizer = "finalizer.sro.openshift.io"
-
 // GetName of the special resource operator
 func (r *SpecialResourceReconciler) GetName() string {
 	return "special-resource-operator"
