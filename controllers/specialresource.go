@@ -124,12 +124,14 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 			}
 		}
 
+		r.specialresource = r.parent
 		log = r.Log.WithName(color.Print(r.specialresource.Name, color.Green))
 		log.Info("Reconciling")
 
 		// Execute finalization logic if CR is being deleted
 		isMarkedToBeDeleted := r.specialresource.GetDeletionTimestamp() != nil
 		if isMarkedToBeDeleted {
+			log.Info("Marked to be deleted, reconciling finalizer")
 			err = reconcileFinalizers(r)
 			return reconcile.Result{}, err
 		}
@@ -142,7 +144,6 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 			}
 		}
 
-		r.specialresource = r.parent
 		if err := ReconcileHardwareConfigurations(r); err != nil {
 			// We do not want a stacktrace here, errs.Wrap already created
 			// breadcrumb of errors to follow. Just sprintf with %v rather than %+v
