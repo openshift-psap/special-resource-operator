@@ -90,11 +90,6 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusReconcile(
 }
 
 func (r *SpecialResourceReconciler) clusterOperatorStatusUpdate() error {
-	co, err := r.ClusterOperators().Get(context.TODO(), r.GetName(), metav1.GetOptions{})
-	co.DeepCopyInto(&r.clusterOperator)
-	if err != nil {
-		return err
-	}
 
 	if _, err := r.ClusterOperators().UpdateStatus(context.TODO(), &r.clusterOperator, metav1.UpdateOptions{}); err != nil {
 		return err
