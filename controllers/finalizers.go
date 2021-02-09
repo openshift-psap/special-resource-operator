@@ -42,6 +42,10 @@ func finalizeSpecialResource(r *SpecialResourceReconciler) error {
 	var found bool
 
 	config, err = getHardwareConfiguration(r)
+	if err != nil {
+		log.Info("Failed to get hardware states while reconciling finalizer")
+		return err
+	}
 
 	manifests, found, err = unstructured.NestedMap(config.Object, "data")
 	exit.OnErrorOrNotFound(found, err)
