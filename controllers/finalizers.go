@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
+	"github.com/openshift-psap/special-resource-operator/pkg/metrics"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -54,7 +55,7 @@ func finalizeSpecialResource(r *SpecialResourceReconciler) error {
 
 	for _, state := range states {
 		log.Info("Deleting metric for", "state:", state)
-		deleteMetricCompleteStates(r.specialresource.Name, state)
+		metrics.DeleteCompleteStates(r.specialresource.Name, state)
 	}
 
 	log.Info("Successfully finalized", "SpecialResource:", r.specialresource.Name)

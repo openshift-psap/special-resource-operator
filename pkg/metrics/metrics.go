@@ -1,4 +1,4 @@
-package controllers
+package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,15 +28,18 @@ var (
 	)
 )
 
-func setMetricCompletedState(specialResource string, state string, value int) {
+// SetCompletedState set completed states
+func SetCompletedState(specialResource string, state string, value int) {
 	completedStates.WithLabelValues(specialResource, state).Set(float64(value))
 }
 
-func deleteMetricCompleteStates(specialResource string, state string) {
+// DeleteCompleteStates delete metric complete states
+func DeleteCompleteStates(specialResource string, state string) {
 	completedStates.DeleteLabelValues(specialResource, state)
 }
 
-func setMetricSpecialResourcesCreated(value int) {
+// SetSpecialResourcesCreated set number of created states
+func SetSpecialResourcesCreated(value int) {
 	specialResourcesCreated.Set(float64(value))
 }
 

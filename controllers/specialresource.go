@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-psap/special-resource-operator/pkg/assets"
 	"github.com/openshift-psap/special-resource-operator/pkg/color"
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
+	"github.com/openshift-psap/special-resource-operator/pkg/metrics"
 	errs "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -82,7 +83,7 @@ func ReconcilerSpecialResources(r *SpecialResourceReconciler, req ctrl.Request) 
 	}
 
 	// set specialResourcesCreated metric to the number of specialresources
-	setMetricSpecialResourcesCreated(len(specialresources.Items))
+	metrics.SetSpecialResourcesCreated(len(specialresources.Items))
 
 	for _, r.parent = range specialresources.Items {
 

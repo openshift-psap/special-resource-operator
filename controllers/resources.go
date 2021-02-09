@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/openshift-psap/special-resource-operator/pkg/assets"
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
+	"github.com/openshift-psap/special-resource-operator/pkg/metrics"
 	"github.com/openshift-psap/special-resource-operator/pkg/yamlutil"
 	"github.com/pkg/errors"
 	errs "github.com/pkg/errors"
@@ -218,10 +219,10 @@ func ReconcileHardwareStates(r *SpecialResourceReconciler, config unstructured.U
 		log.Info("Executing", "State", state)
 		namespacedYAML := []byte(manifests[state].(string))
 		if err := createFromYAML(namespacedYAML, r, r.specialresource.Spec.Namespace); err != nil {
-			setMetricCompletedState(r.specialresource.Name, state, 0)
+			metrics.SetCompletedState(r.specialresource.Name, state, 0)
 			return errs.Wrap(err, "Failed to create resources")
 		}
-		setMetricCompletedState(r.specialresource.Name, state, 1)
+		metrics.SetCompletedState(r.specialresource.Name, state, 1)
 	}
 
 	return nil
