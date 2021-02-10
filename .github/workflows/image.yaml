@@ -16,15 +16,15 @@ jobs:
     runs-on: [self-hosted, Linux, X64]
     steps:
     - uses: actions/checkout@v2
-      env:
-        GIT_PR_SHA: ${{github.event.pull_request.head.sha}}
-        GIT_PR_SHA_SHORT: "${{ env.GIT_PR_SHA:0:10 }}"
+    - run: |
+        GIT_PR_SHA=${{github.event.pull_request.head.sha}}
+        echo TAG=pr-${GIT_PR_SHA:0:10} >> $GITHUB_ENV
 
     - name: add go path
       run: echo '~/go/bin' >> "$GITHUB_PATH"
 
-    - name: TAG=${{ env.GIT_PR_SHA }} make local-image-build 
-      run:  TAG=${{ env.GIT_PR_SHA }} make local-image-build
+    - name: TAG=${{ env.TAG }} make local-image-build 
+      run:  TAG=${{ env.TAG }} make local-image-build
     
     - name: auth.json
       run: |
