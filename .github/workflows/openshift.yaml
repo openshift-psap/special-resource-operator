@@ -30,6 +30,10 @@ jobs:
 
     - name: checkout
       uses: actions/checkout@v2
+    - run: |
+        GIT_PR_SHA=${{github.event.pull_request.head.sha}}
+        echo TAG=pr-${GIT_PR_SHA:0:10} >> $GITHUB_ENV
+
 
     - name: add go path
       run: echo '~/go/bin' >> "$GITHUB_PATH"
@@ -46,8 +50,8 @@ jobs:
     - name: make undeploy
       run: make undeploy
 
-    - name: make go-deploy-manifests
-    - run: make go-deploy-manifests
+    - name: TAG=${{ env.TAG }} make go-deploy-manifests
+    - run:  TAG=${{ env.TAG }} make go-deploy-manifests
 
     - name: make test-e2e
       run: make test-e2e
