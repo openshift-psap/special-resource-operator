@@ -9,6 +9,10 @@ on:
       - "**/README.md"
   workflow_dispatch:
 
+env:
+  GIT_PR_SHA: ${{github.event.pull_request.head.sha}}
+  GIT_PR_SHA_SHORT: "${{ env.GIT_PR_SHA:0:10 }}"
+
 jobs: 
   build:
     name: build
@@ -19,8 +23,8 @@ jobs:
     - name: add go path
       run: echo '~/go/bin' >> "$GITHUB_PATH"
 
-    - name: make local-image-build 
-      run: make local-image-build
+    - name: TAG=${{ env.GIT_PR_SHA }} make local-image-build 
+      run:  TAG=${{ env.GIT_PR_SHA }} make local-image-build
     
     - name: auth.json
       run: |
