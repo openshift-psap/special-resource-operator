@@ -9,9 +9,6 @@ on:
       - "**/README.md"
   workflow_dispatch:
 
-env:
-  GIT_PR_SHA: ${{github.event.pull_request.head.sha}}
-  GIT_PR_SHA_SHORT: "${{ env.GIT_PR_SHA:0:10 }}"
 
 jobs: 
   build:
@@ -19,6 +16,9 @@ jobs:
     runs-on: [self-hosted, Linux, X64]
     steps:
     - uses: actions/checkout@v2
+      env:
+        GIT_PR_SHA: ${{github.event.pull_request.head.sha}}
+        GIT_PR_SHA_SHORT: "${{ env.GIT_PR_SHA:0:10 }}"
 
     - name: add go path
       run: echo '~/go/bin' >> "$GITHUB_PATH"
