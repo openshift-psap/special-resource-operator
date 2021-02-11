@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	srov1beta1 "github.com/openshift-psap/special-resource-operator/api/v1beta1"
 	"github.com/openshift-psap/special-resource-operator/pkg/color"
 	"github.com/openshift-psap/special-resource-operator/pkg/conditions"
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
@@ -79,6 +80,12 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusReconcile(
 
 	r.clusterOperator.Status.Conditions = conditions
 
+	if err, relatedObjects := getRelatedObjects(r); err != nil {
+		return errs.Wrap(err, "Cannot set ClusterOperator related objects")
+	} else {
+		r.clusterOperator.Status.RelatedObjects = relatedObjects
+	}
+
 	if err := r.clusterOperatorStatusSet(); err != nil {
 		return errs.Wrap(err, "Cannot update the ClusterOperator status")
 	}
@@ -96,6 +103,27 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusUpdate() error {
 		return err
 	}
 	return nil
+}
+
+func getRelatedObjects(r *SpecialResourceReconciler) (error, []configv1.ObjectReference) {
+	toReturn := []configv1.ObjectReference{
+		{Group: "", Resource: "namespaces", Name: "openshift-special-resource-operator"},
+		{Group: "sro.openshift.io", Resource: "specialresources", Name: ""},
+	}
+	specialresources := &srov1beta1.SpecialResourceList{}
+
+	err := r.List(context.TODO(), specialresources, []client.ListOption{}...)
+	if err != nil {
+		return err, toReturn
+	}
+
+	for _, sr := range specialresources.Items {
+		if sr.Spec.Namespace != "" { // For preamble
+			log.Info("Adding to relatedObjects", "namespace", sr.Spec.Namespace)
+			toReturn = append(toReturn, configv1.ObjectReference{Group: "", Resource: "namespaces", Name: sr.Spec.Namespace})
+		}
+	}
+	return nil, toReturn
 }
 
 // ReportSpecialResourcesStatus Depending on what error we're getting from the
