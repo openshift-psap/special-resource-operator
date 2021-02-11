@@ -80,10 +80,8 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusReconcile(
 
 	r.clusterOperator.Status.Conditions = conditions
 
-	if err, relatedObjects := getRelatedObjects(r); err != nil {
+	if err := r.clusterOperatorUpdateRelatedObjects(); err != nil {
 		return errs.Wrap(err, "Cannot set ClusterOperator related objects")
-	} else {
-		r.clusterOperator.Status.RelatedObjects = relatedObjects
 	}
 
 	if err := r.clusterOperatorStatusSet(); err != nil {
@@ -105,25 +103,30 @@ func (r *SpecialResourceReconciler) clusterOperatorStatusUpdate() error {
 	return nil
 }
 
-func getRelatedObjects(r *SpecialResourceReconciler) (error, []configv1.ObjectReference) {
-	toReturn := []configv1.ObjectReference{
+func (r *SpecialResourceReconciler) clusterOperatorUpdateRelatedObjects() error {
+	relatedObjects := []configv1.ObjectReference{
 		{Group: "", Resource: "namespaces", Name: "openshift-special-resource-operator"},
 		{Group: "sro.openshift.io", Resource: "specialresources", Name: ""},
 	}
-	specialresources := &srov1beta1.SpecialResourceList{}
 
+	// Get all specialresource objects
+	specialresources := &srov1beta1.SpecialResourceList{}
 	err := r.List(context.TODO(), specialresources, []client.ListOption{}...)
 	if err != nil {
-		return err, toReturn
+		return err
 	}
 
+	//Add namespace for each specialresource to related objects
 	for _, sr := range specialresources.Items {
-		if sr.Spec.Namespace != "" { // For preamble
+		if sr.Spec.Namespace != "" { // preamble specialresource has no namespace
 			log.Info("Adding to relatedObjects", "namespace", sr.Spec.Namespace)
-			toReturn = append(toReturn, configv1.ObjectReference{Group: "", Resource: "namespaces", Name: sr.Spec.Namespace})
+			relatedObjects = append(relatedObjects, configv1.ObjectReference{Group: "", Resource: "namespaces", Name: sr.Spec.Namespace})
 		}
 	}
-	return nil, toReturn
+
+	r.clusterOperator.Status.RelatedObjects = relatedObjects
+
+	return nil
 }
 
 // ReportSpecialResourcesStatus Depending on what error we're getting from the
