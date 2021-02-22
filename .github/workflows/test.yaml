@@ -19,7 +19,7 @@ jobs:
   repo-test:
     name: main-repo
     runs-on: ubuntu-20.04
-    if: contains(github.repository, 'openshift-psap/special-resource-operator')
+    if: contains(github.event.pull_request.head.repo.full_name, 'openshift-psap/special-resource-operator')
     steps:
     - name: Dump github context
       env:
