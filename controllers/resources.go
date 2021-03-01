@@ -350,7 +350,7 @@ func createFromYAML(yamlFile []byte, r *SpecialResourceReconciler, namespace str
 		err = CRUD(obj, r)
 		exit.OnError(errs.Wrap(err, "CRUD exited non-zero"))
 
-		// Callbacks after CRUD will wait for ressource and check status
+		// Callbacks after CRUD will wait for resource and check status
 		if err := afterCRUDhooks(obj, r); err != nil {
 			return errs.Wrap(err, "After CRUD hooks failed")
 		}
