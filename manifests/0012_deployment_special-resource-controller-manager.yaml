@@ -81,5 +81,3 @@ spec:
       - name: special-resource-operator-tls
         secret:
           secretName: special-resource-operator-tls
-
-
