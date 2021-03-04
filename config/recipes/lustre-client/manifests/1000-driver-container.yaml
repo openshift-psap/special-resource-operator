@@ -49,6 +49,7 @@ data:
         lustre_rmmod
     }
 
+    # weak-modules enforces dracut dependency even when using --no-initramfs, a BZ has been opened and these two lines should be later not needed
     touch /usr/bin/dracut
     chmod +x /usr/bin/dracut
     find /lib/modules/*/extra/lustre-client | grep .ko | weak-modules --add-modules --verbose --no-initramfs
