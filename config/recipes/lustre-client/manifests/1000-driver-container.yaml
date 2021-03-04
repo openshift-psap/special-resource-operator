@@ -49,6 +49,10 @@ data:
         lustre_rmmod
     }
 
+    touch /usr/bin/dracut
+    chmod +x /usr/bin/dracut
+    find /lib/modules/*/extra/lustre-client | grep .ko | weak-modules --add-modules --verbose --no-initramfs
+
     modprobe -v lnet
     modprobe -v ksocklnd
     modprobe -v mgc
@@ -58,10 +62,10 @@ data:
 
     mkdir -p /mnt/fsx
 
-    trap "echo 'Caught signal'; exit 1" HUP INT QUIT PIPE TERM
-    trap "unmount" EXIT
+    sleep infinity & PID=$!
+    trap "kill $PID; unmount" HUP INT QUIT PIPE TERM EXIT
+    wait
 
-    sleep infinity
 ---
 # Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
