@@ -7,8 +7,8 @@ import (
 
 	srov1beta1 "github.com/openshift-psap/special-resource-operator/api/v1beta1"
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
-	"github.com/openshift-psap/special-resource-operator/pkg/warn"
 	"github.com/openshift-psap/special-resource-operator/pkg/osversion"
+	"github.com/openshift-psap/special-resource-operator/pkg/warn"
 
 	"github.com/pkg/errors"
 	errs "github.com/pkg/errors"
@@ -185,8 +185,6 @@ func getOperatingSystem() (string, string, string, error) {
 
 	return osversion.RenderOperatingSystem(nodeOSrel, nodeOSmaj, nodeOSmin)
 }
-
-
 
 func getKernelFullVersion() (string, error) {
 

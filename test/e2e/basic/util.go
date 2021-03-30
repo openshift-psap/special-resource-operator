@@ -16,8 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/onsi/ginkgo"
-	"github.com/openshift-psap/special-resource-operator/test/framework"
 	"github.com/openshift-psap/special-resource-operator/pkg/osversion"
+	"github.com/openshift-psap/special-resource-operator/test/framework"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -64,7 +64,6 @@ func GetVersionTriplet(cs *framework.ClientSet) (string, string, string, error) 
 
 	return nodeKernelFullVersion, "rhel" + nodeOSVersion, nodeOCPVersion, nil
 }
-
 
 // GetNodesByRole returns a list of nodes that match a given role.
 func GetNodesByRole(cs *framework.ClientSet, role string) ([]corev1.Node, error) {
