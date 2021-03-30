@@ -39,9 +39,9 @@ var _ = ginkgo.Describe("[basic][simple-kmod] create and deploy simple-kmod", fu
 		ginkgo.By("Checking if NFD is running, getting kernel, os, ocp versions")
 		var err error
 		nodeKernelFullVersion, nodeOSVersion, nodeOCPVersion, err = GetVersionTriplet(cs)
-		Logf("Info: KernelVersion: " + nodeKernelFullVersion)
-		Logf("Info: OSVersion: " + nodeOSVersion)
-		Logf("Info: OpenShift Version: " + nodeOCPVersion)
+		_, _ = Logf("Info: KernelVersion: " + nodeKernelFullVersion)
+		_, _ = Logf("Info: OSVersion: " + nodeOSVersion)
+		_, _ = Logf("Info: OpenShift Version: " + nodeOCPVersion)
 
 		if err != nil {
 			explain = err.Error()
@@ -50,7 +50,7 @@ var _ = ginkgo.Describe("[basic][simple-kmod] create and deploy simple-kmod", fu
 
 		kernelVersion := strings.ReplaceAll(nodeKernelFullVersion, "_", "-")
 		hash64 := hash.FNV64a(nodeOSVersion + "-" + kernelVersion)
-		Logf("Info: hash64 for object names: " + hash64)
+		_, _ = Logf("Info: hash64 for object names: " + hash64)
 
 		buffer, err := ioutil.ReadFile("../../../config/recipes/simple-kmod/0000-simple-kmod-cr.yaml")
 		if err != nil {
