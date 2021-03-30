@@ -5,7 +5,11 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
+
+	errs "github.com/pkg/errors"
+
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +23,86 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	//srov1beta1 "github.com/openshift-psap/special-resource-operator/api/v1beta1"
 )
+
+// Return kernel full version, os version, openshift version
+//                    feature.node.kubernetes.io/kernel-version.full=4.18.0-240.10.1.el8_3.x86_64
+//                    feature.node.kubernetes.io/system-os_release.RHEL_VERSION=8.3
+//                    feature.node.kubernetes.io/system-os_release.VERSION_ID=4.7
+func GetVersionTriplet(cs *framework.ClientSet) (string, string, string, error) {
+	nodes, err := GetNodesByRole(cs, "worker")
+	if err != nil {
+		return "", "", "", err
+	}
+	node := nodes[0]
+	labels := node.GetLabels()
+
+	// Assuming all nodes are running the same OS...
+	os := "feature.node.kubernetes.io/system-os_release"
+	nodeOSrel := labels[os+".ID"]
+	nodeKernelFullVersion := labels["feature.node.kubernetes.io/kernel-version.full"]
+	nodeOSVersion := labels[os+".RHEL_VERSION"]
+	nodeOCPVersion := labels[os+".VERSION_ID"]
+	if len(nodeKernelFullVersion) == 0 || len(nodeOSVersion) == 0 {
+		return "", "", "", errs.New("Cannot extract feature.node.kubernetes.io/system-os_release.*, is NFD running? Check node labels")
+	}
+
+	if nodeOSVersion == "" {
+		// Old NFD version without OSVersion -- try to render it
+		os := "feature.node.kubernetes.io/system-os_release"
+		nodeOSmaj := labels[os+".VERSION_ID.major"]
+		nodeOSmin := labels[os+".VERSION_ID.minor"]
+
+		_, _, nodeOSVersion, err = renderOperatingSystem(nodeOSrel, nodeOSmaj, nodeOSmin)
+		if err != nil {
+			return "", "", "", errs.New("Could not determine operating system version")
+		}
+	}
+
+	if nodeOSrel != "rhcos" {
+		return nodeKernelFullVersion, nodeOSrel + nodeOSVersion, nodeOCPVersion, errs.New("Unexpected error, node not running rhcos")
+	}
+
+	return nodeKernelFullVersion, "rhel" + nodeOSVersion, nodeOCPVersion, nil
+}
+
+// Returns for example rhel8, rhel8.3, 8.3
+func renderOperatingSystem(rel string, maj string, min string) (string, string, string, error) {
+
+	// rhcos version is the openshift version running need to translate
+	// into rhel major minor version
+	if strings.Compare(rel, "rhcos") == 0 {
+		rel := "rhel"
+
+		num, _ := strconv.Atoi(min)
+
+		if strings.Compare(maj, "4") == 0 && num < 4 {
+			maj := "8"
+			return rel + maj, rel + maj + ".0", maj + ".0", nil
+		}
+
+		if strings.Compare(maj, "4") == 0 && strings.Compare(min, "4") == 0 {
+			maj := "8"
+			return rel + maj, rel + maj + ".1", maj + ".1", nil
+		}
+
+		if strings.Compare(maj, "4") == 0 && num < 7 {
+			maj := "8"
+			return rel + maj, rel + maj + ".2", maj + ".2", nil
+		}
+
+		maj := "8"
+		return rel + maj, rel + maj + ".3", maj + ".3", nil
+	}
+
+	// A Fedora system has no min yet, so if min is empty
+	// return fedora31 and not fedora31.
+	if min == "" {
+		return rel + maj, rel + maj, maj, nil
+	}
+
+	return rel + maj, rel + maj + "." + min, maj + "." + min, nil
+
+}
 
 // GetNodesByRole returns a list of nodes that match a given role.
 func GetNodesByRole(cs *framework.ClientSet, role string) ([]corev1.Node, error) {

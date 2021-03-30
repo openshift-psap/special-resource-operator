@@ -208,13 +208,13 @@ func renderOperatingSystem(rel string, maj string, min string) (string, string, 
 			return rel + maj, rel + maj + ".1", maj + ".1", nil
 		}
 
-		if strings.Compare(maj, "4") == 0 && strings.Compare(min, "5") == 0 {
+		if strings.Compare(maj, "4") == 0 && num < 7 {
 			maj := "8"
 			return rel + maj, rel + maj + ".2", maj + ".2", nil
 		}
 
 		maj := "8"
-		return rel + maj, rel + maj + ".2", maj + ".2", nil
+		return rel + maj, rel + maj + ".3", maj + ".3", nil
 	}
 
 	// A Fedora system has no min yet, so if min is empty
