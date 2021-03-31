@@ -62,6 +62,10 @@ spec:
         name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
         imagePullPolicy: Always
         command: ["/sbin/init"]
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "kmods-via-containers unload simple-kmod $(uname -r)"]
         securityContext:
           privileged: true
       nodeSelector:
