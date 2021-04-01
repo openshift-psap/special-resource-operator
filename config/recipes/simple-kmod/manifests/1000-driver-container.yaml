@@ -65,7 +65,7 @@ spec:
         lifecycle:
           preStop:
             exec:
-              command: ["/bin/sh", "-c", "kmods-via-containers unload simple-kmod $(uname -r)"]
+              command: ["/bin/sh", "-c", "systemctl stop kmods-via-containers@simple-kmod"]
         securityContext:
           privileged: true
       nodeSelector:
