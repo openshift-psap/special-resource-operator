@@ -161,3 +161,16 @@ func NewLogger(l *zap.Logger) logr.Logger {
 		},
 	}
 }
+
+func (l *noopInfoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (l *noopInfoLogger) V(level int) logr.Logger                                   { return &noopInfoLogger{} }
+func (l *noopInfoLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
+	return &noopInfoLogger{}
+}
+func (l *noopInfoLogger) WithName(name string) logr.Logger { return &noopInfoLogger{} }
+func (l *infoLogger) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (l *infoLogger) V(level int) logr.Logger                                   { return &infoLogger{} }
+func (l *infoLogger) WithValues(keysAndValues ...interface{}) logr.Logger {
+	return &infoLogger{}
+}
+func (l *infoLogger) WithName(name string) logr.Logger { return &infoLogger{} }
