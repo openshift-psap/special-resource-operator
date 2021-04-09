@@ -175,7 +175,7 @@ func WaitForDaemonsetReady(cs *framework.ClientSet, interval, duration time.Dura
 			return false, nil
 		}
 
-		if ds.Status.DesiredNumberScheduled == ds.Status.NumberReady {
+		if ds.Status.DesiredNumberScheduled == ds.Status.NumberAvailable {
 			return true, nil
 		}
 
