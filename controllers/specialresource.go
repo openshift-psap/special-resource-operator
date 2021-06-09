@@ -45,7 +45,7 @@ func (r *SpecialResourceReconciler) GetName() string {
 // +kubebuilder:rbac:groups=build.openshift.io,resources=builds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core,resources=events,verbs=list;watch;create;update;patch
+// +kubebuilder:rbac:groups=core,resources=events,verbs=list;watch;create;update;patch;delete;get
 // +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;update;
 // +kubebuilder:rbac:groups=core,resources=persistentvolumes,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;list;watch;create;update;delete
@@ -62,6 +62,18 @@ func (r *SpecialResourceReconciler) GetName() string {
 // +kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators/status,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=create;patch;delete
+// +kubebuilder:rbac:groups=core,resources=services/finalizers,verbs=create;delete;get;list;update;patch;delete;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments/finalizers,resourceNames=shipwright-build,verbs=update
+// +kubebuilder:rbac:groups=apps,resources=replicasets,verbs=create;delete;get;list;patch;update;watch;get
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=shipwright.io,resources=*,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=shipwright.io,resources=buildruns,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=shipwright.io,resources=buildstrategies,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=shipwright.io,resources=clusterbuildstrategies,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=tekton.dev,resources=taskruns,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=tekton.dev,resources=tasks,verbs=create;delete;get;list;patch;update;watch
 
 // SpecialResourcesReconcile Takes care of all specialresources in the cluster
 func SpecialResourcesReconcile(r *SpecialResourceReconciler, req ctrl.Request) (ctrl.Result, error) {

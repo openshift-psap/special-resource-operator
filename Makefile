@@ -86,6 +86,7 @@ manifests: manifests-gen kustomize configure
 deploy: manifests
 	$(KUSTOMIZE) build config/namespace | kubectl apply -f -
 	$(shell sleep 5)
+	kubectl create secret tls special-resource-operator-tls -n openshift-special-resource-operator --cert=certs/tls.crt --key=certs/tls.key
 	$(KUSTOMIZE) build config/cr | kubectl apply -f -
 
 # If the CRD is deleted before the CRs the CRD finalizer will hang forever

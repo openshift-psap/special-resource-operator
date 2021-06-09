@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/openshift-psap/special-resource-operator
-  newTag: go-mod-1.16
+  newTag: dagray-vanilla-k8s-test

@@ -1,0 +1,15 @@
+apiVersion: shipwright.io/v1alpha1
+kind: Build
+metadata:
+  name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
+spec:
+  source:  
+    url: {{.SpecialResource.Spec.DriverContainer.Source.Git.Uri}}
+    revision: {{.SpecialResource.Spec.DriverContainer.Source.Git.Ref}}
+  strategy:
+    name: buildah
+    kind: ClusterBuildStrategy
+  output:
+    image: quay.io/dagray/centos8-simple-kmod:latest # .SpecialResource.Spec.DriverContainer.Destination?
+    credentials:
+      name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}

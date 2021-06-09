@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -81,14 +82,14 @@ var runInfo = runtimeInformation{
 	OperatingSystemDecimal:    "",
 	KernelFullVersion:         "",
 	KernelPatchVersion:        "",
-	ClusterVersion:            "",
-	ClusterVersionMajorMinor:  "",
-	ClusterUpgradeInfo:        make(map[string]nodeUpgradeVersion),
-	UpdateVendor:              "",
-	PushSecretName:            "",
-	OSImageURL:                "",
-	Node:                      nodes{list: &unstructured.UnstructuredList{}, count: 0xDEADBEEF},
-	Proxy:                     proxyConfiguration{},
+	//ClusterVersion:            "",
+	//ClusterVersionMajorMinor:  "",
+	ClusterUpgradeInfo: make(map[string]nodeUpgradeVersion),
+	UpdateVendor:       "",
+	PushSecretName:     "",
+	OSImageURL:         "",
+	Node:               nodes{list: &unstructured.UnstructuredList{}, count: 0xDEADBEEF},
+	Proxy:              proxyConfiguration{},
 	GroupName: resourceGroupName{
 		DriverBuild:            "driver-build",
 		DriverContainer:        "driver-container",
@@ -140,25 +141,25 @@ func getRuntimeInformation(r *SpecialResourceReconciler) {
 	runInfo.KernelPatchVersion, err = getKernelPatchVersion()
 	exit.OnError(errs.Wrap(err, "Failed to get kernel patch version"))
 
-	log.Info("Get Cluster Version")
-	runInfo.ClusterVersion, runInfo.ClusterVersionMajorMinor, err = getClusterVersion(r)
-	exit.OnError(errs.Wrap(err, "Failed to get cluster version"))
+	//log.Info("Get Cluster Version")
+	//runInfo.ClusterVersion, runInfo.ClusterVersionMajorMinor, err = getClusterVersion(r)
+	//exit.OnError(errs.Wrap(err, "Failed to get cluster version"))
 
 	log.Info("Get Upgrade Info")
 	runInfo.ClusterUpgradeInfo, err = getUpgradeInfo()
 	exit.OnError(errs.Wrap(err, "Failed to get upgrade info"))
 
-	log.Info("Get Push Secret Name")
-	runInfo.PushSecretName, err = retryGetPushSecretName(r)
-	exit.OnError(errs.Wrap(err, "Failed to get push secret name"))
+	//log.Info("Get Push Secret Name")
+	//runInfo.PushSecretName, err = retryGetPushSecretName(r)
+	//exit.OnError(errs.Wrap(err, "Failed to get push secret name"))
 
-	log.Info("Get OS Image URL")
-	runInfo.OSImageURL, err = getOSImageURL(r)
-	exit.OnError(errs.Wrap(err, "Failed to get OSImageURL"))
+	//log.Info("Get OS Image URL")
+	//runInfo.OSImageURL, err = getOSImageURL(r)
+	//exit.OnError(errs.Wrap(err, "Failed to get OSImageURL"))
 
-	log.Info("Get Proxy Configuration")
-	runInfo.Proxy, err = getProxyConfiguration(r)
-	exit.OnError(errs.Wrap(err, "Failed to get Proxy Configuration"))
+	//log.Info("Get Proxy Configuration")
+	//runInfo.Proxy, err = getProxyConfiguration(r)
+	//exit.OnError(errs.Wrap(err, "Failed to get Proxy Configuration"))
 
 	r.specialresource.DeepCopyInto(&runInfo.SpecialResource)
 }
@@ -214,9 +215,12 @@ func getKernelFullVersion() (string, error) {
 func getKernelPatchVersion() (string, error) {
 
 	version := strings.Split(runInfo.KernelFullVersion, "-")
+	log.Info(fmt.Sprintf("getKernelPatchVersion: version length: %d", len(version)))
 	// Happens only if kernel full version has no patch version sep by "-"
 	if len(version) == 1 {
 		short := strings.Split(runInfo.KernelFullVersion, ".")
+		log.Info(fmt.Sprintf("getKernelPatchVersion: short length: %d", len(short)))
+		log.Info(fmt.Sprintf(runInfo.KernelFullVersion))
 		return short[0] + "." + short[1] + "." + short[2], nil
 	}
 

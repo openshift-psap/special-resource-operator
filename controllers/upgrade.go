@@ -44,6 +44,8 @@ func cacheNodes(r *SpecialResourceReconciler, force bool) (*unstructured.Unstruc
 	// a SharedInformer will update the list of nodes if
 	// more nodes join the cluster.
 	cached := int64(len(runInfo.Node.list.Items))
+
+	log.Info("Cached node list:", "length", cached)
 	if cached == runInfo.Node.count && !force {
 		return runInfo.Node.list, nil
 	}
@@ -59,12 +61,18 @@ func cacheNodes(r *SpecialResourceReconciler, force bool) (*unstructured.Unstruc
 	if len(r.specialresource.Spec.Node.Selector) > 0 {
 		opts = append(opts, client.MatchingLabels{r.specialresource.Spec.Node.Selector: "true"})
 	} else {
-		opts = append(opts, client.MatchingLabels{"node-role.kubernetes.io/worker": ""})
+		opts = append(opts, client.MatchingLabels{"node-role.kubernetes.io/node": ""})
 	}
 
 	err := r.List(context.TODO(), runInfo.Node.list, opts...)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "Client cannot get NodeList")
+	}
+
+	log.Info("Node list:", "length", len(runInfo.Node.list.Items))
+	if len(runInfo.Node.list.Items) == 0 {
+		log.Info("No nodes found for the SpecialResource. Consider setting .Spec.Node.Selector in the CR or labeling worker nodes.")
 	}
 
 	return runInfo.Node.list, err
@@ -79,6 +87,7 @@ func getUpgradeInfo() (map[string]nodeUpgradeVersion, error) {
 	// one could easily add driver-kernel-versions for each node.
 	for _, node := range runInfo.Node.list.Items {
 
+		var nodeOS string
 		var rhelVersion string
 		var kernelFullVersion string
 		var clusterVersion string
@@ -86,24 +95,36 @@ func getUpgradeInfo() (map[string]nodeUpgradeVersion, error) {
 		labels := node.GetLabels()
 		// We only need to check for the key, the value
 		// is available if the key is there
-		short := "feature.node.kubernetes.io/kernel-version.full"
-		if kernelFullVersion, found = labels[short]; !found {
+		short := "feature.node.kubernetes.io/system-os_release.ID"
+		if nodeOS, found = labels[short]; !found {
 			return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
 		}
+		if nodeOS == "rhcos" {
+			short = "feature.node.kubernetes.io/kernel-version.full"
+			if kernelFullVersion, found = labels[short]; !found {
+				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			}
 
-		short = "feature.node.kubernetes.io/system-os_release.RHEL_VERSION"
-		if rhelVersion, found = labels[short]; !found {
-			return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			short = "feature.node.kubernetes.io/system-os_release.RHEL_VERSION"
+			if rhelVersion, found = labels[short]; !found {
+				log.Info("Label " + short + " not found is NFD running? Check node labels")
+				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			}
+
+			short = "feature.node.kubernetes.io/system-os_release.VERSION_ID"
+			if clusterVersion, found = labels[short]; !found {
+				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			}
+			info[kernelFullVersion] = nodeUpgradeVersion{rhelVersion: rhelVersion, clusterVersion: clusterVersion}
+		} else {
+			log.Info("Using non-rhcos nodes, assuming vanilla Kubernetes")
+			short = "feature.node.kubernetes.io/system-os_release.VERSION_ID"
+			if clusterVersion, found = labels[short]; !found {
+				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			}
+			info[kernelFullVersion] = nodeUpgradeVersion{rhelVersion: "0.0", clusterVersion: clusterVersion}
 		}
-
-		short = "feature.node.kubernetes.io/system-os_release.VERSION_ID"
-		if clusterVersion, found = labels[short]; !found {
-			return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
-		}
-
-		info[kernelFullVersion] = nodeUpgradeVersion{rhelVersion: rhelVersion, clusterVersion: clusterVersion}
 	}
-
 	return info, nil
 }
 

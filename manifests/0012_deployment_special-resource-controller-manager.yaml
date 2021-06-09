@@ -61,7 +61,7 @@ spec:
               fieldPath: metadata.namespace
         - name: RELEASE_VERSION
           value: 0.0.1-snapshot
-        image: quay.io/openshift-psap/special-resource-operator:go-mod-1.16
+        image: quay.io/openshift-psap/special-resource-operator:dagray-vanilla-k8s-test
         imagePullPolicy: Always
         name: manager
         resources:

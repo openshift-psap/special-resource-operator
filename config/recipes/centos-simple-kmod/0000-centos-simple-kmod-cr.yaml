@@ -1,0 +1,19 @@
+apiVersion: sro.openshift.io/v1beta1
+kind: SpecialResource
+metadata:
+  name: centos-simple-kmod
+spec:
+  namespace: centos-simple-kmod
+  configuration:
+    - name: "KMOD_NAMES"
+      value: ["simple-kmod", "simple-procfs-kmod"]
+  driverContainer:
+    source:
+      git:
+        ref: "vanilla-k8s-centos"
+        uri: "https://github.com/dagrayvid/kvc-simple-kmod.git"
+    buildArgs:
+      - name: "KVER"
+        value: "{{.KernelFullVersion}}"
+      - name: "KMODVER"
+        value: "SRO"

@@ -396,7 +396,9 @@ func needToUpdateResourceVersion(kind string) bool {
 		kind == "PrometheusRule" ||
 		kind == "CSIDriver" ||
 		kind == "Issuer" ||
-		kind == "Certificate" {
+		kind == "Certificate" ||
+		kind == "Build" ||
+		kind == "BuildRun" {
 		return true
 	}
 	return false
