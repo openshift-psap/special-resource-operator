@@ -48,6 +48,9 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=true"
 
+PROMETHEUS ?= 0
+
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -78,6 +81,13 @@ configure:
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMAGE)
 
 manifests: manifests-gen kustomize configure
+	if [[ $(PROMETHEUS) == 0 ]]; then \
+		echo "Deployment expects Prometheus operator for ServiceMonitor"; \
+		sed -i 's/^#- ..\/prometheus/- ..\/prometheus/g' config/default/kustomization.yaml; \
+	else \
+		echo "Disabling Prometheus ServiceMonitor"; \
+		sed -i 's/^- ..\/prometheus/#- ..\/prometheus/g' config/default/kustomization.yaml; \
+	fi;
 	cd $@; $(KUSTOMIZE) build ../config/namespace | $(CSPLIT)
 	cd $@; bash ../scripts/rename.sh
 	cd $@; $(KUSTOMIZE) build ../config/cr > 0015_specialresource_special-resource-preamble.yaml

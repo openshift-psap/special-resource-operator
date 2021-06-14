@@ -5,3 +5,5 @@ metadata:
 spec:
   buildRef:
     name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
+
+    # "{{.KernelFullVersion}}"

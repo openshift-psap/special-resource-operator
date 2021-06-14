@@ -118,6 +118,11 @@ func getUpgradeInfo() (map[string]nodeUpgradeVersion, error) {
 			info[kernelFullVersion] = nodeUpgradeVersion{rhelVersion: rhelVersion, clusterVersion: clusterVersion}
 		} else {
 			log.Info("Using non-rhcos nodes, assuming vanilla Kubernetes")
+			short = "feature.node.kubernetes.io/kernel-version.full"
+			if kernelFullVersion, found = labels[short]; !found {
+				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")
+			}
+
 			short = "feature.node.kubernetes.io/system-os_release.VERSION_ID"
 			if clusterVersion, found = labels[short]; !found {
 				return nil, errs.New("Label " + short + " not found is NFD running? Check node labels")

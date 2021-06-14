@@ -10,6 +10,6 @@ spec:
     name: buildah
     kind: ClusterBuildStrategy
   output:
-    image: quay.io/dagray/centos8-simple-kmod:latest # .SpecialResource.Spec.DriverContainer.Destination?
+    image: quay.io/dagray/centos8-simple-kmod:{{.KernelFullVersion}} # .SpecialResource.Spec.DriverContainer.Destination?
     credentials:
       name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}

@@ -279,6 +279,11 @@ func setKernelAffineAttributes(obj *unstructured.Unstructured, kernelAffinity bo
 			exit.OnError(err)
 		}
 
+		if obj.GetKind() == "BuildRun" {
+			err := unstructured.SetNestedField(obj.Object, name, "spec", "buildRef", "name")
+			exit.OnError(err)
+		}
+
 		if err := setKernelVersionNodeAffinity(obj); err != nil {
 			return errs.Wrap(err, "Cannot set kernel version node affinity for obj: "+obj.GetKind())
 		}
@@ -296,6 +301,7 @@ func createFromYAML(yamlFile []byte, r *SpecialResourceReconciler, namespace str
 
 		// We are kernel-affine if the yamlSpec uses {{.KernelFullVersion}}
 		// then we need to replicate the object and set a name + os + kernel version
+		// TODO: What if we comment out this template?
 		kernelAffinity := strings.Contains(string(yamlSpec), "{{.KernelFullVersion}}")
 
 		var version nodeUpgradeVersion

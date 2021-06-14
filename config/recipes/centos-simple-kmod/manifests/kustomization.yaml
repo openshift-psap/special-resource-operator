@@ -8,7 +8,8 @@ generatorOptions:
 
 configMapGenerator:
 - files:
-  - 0000-build.yaml
-  - 1000-buildrun.yaml
-  - 2000-driver-container.yaml
+  - 0000-secret.yaml
+  - 1000-build.yaml
+  - 2000-buildrun.yaml
+  - 3000-driver-container.yaml
   name: centos-simple-kmod

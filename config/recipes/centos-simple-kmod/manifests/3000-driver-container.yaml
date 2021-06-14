@@ -58,7 +58,7 @@ spec:
       serviceAccount: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
       serviceAccountName: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
       containers:
-      - image: quay.io/dagray/centos8-simple-kmod:latest # .SpecialResource.Spec.DriverContainer.Destination?
+      - image: quay.io/dagray/centos8-simple-kmod:{{.KernelFullVersion}} # .SpecialResource.Spec.DriverContainer.Destination?
         name: {{.SpecialResource.Name}}-{{.GroupName.DriverContainer}}
         imagePullPolicy: Always
         command: ["/sbin/init"]
@@ -69,5 +69,5 @@ spec:
         securityContext:
           privileged: true
       nodeSelector:
-        node-role.kubernetes.io/worker: ""
-        feature.node.kubernetes.io/kernel-version.full: "{{.KernelFullVersion}}"
+        node-role.kubernetes.io/node: ""
+        #feature.node.kubernetes.io/kernel-version.full: {{.KernelFullVersion}}
