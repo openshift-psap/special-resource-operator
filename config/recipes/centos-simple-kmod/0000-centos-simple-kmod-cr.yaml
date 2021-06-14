@@ -17,3 +17,5 @@ spec:
         value: "{{.KernelFullVersion}}"
       - name: "KMODVER"
         value: "SRO"
+  node:
+    selector: "specialresource.openshift.io/centos-simple-kmod"

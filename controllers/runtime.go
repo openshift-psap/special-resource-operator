@@ -58,6 +58,7 @@ type proxyConfiguration struct {
 }
 
 type runtimeInformation struct {
+	OnOCP                     bool
 	OperatingSystemMajor      string
 	OperatingSystemMajorMinor string
 	OperatingSystemDecimal    string
@@ -77,19 +78,20 @@ type runtimeInformation struct {
 }
 
 var runInfo = runtimeInformation{
+	OnOCP:                     true,
 	OperatingSystemMajor:      "",
 	OperatingSystemMajorMinor: "",
 	OperatingSystemDecimal:    "",
 	KernelFullVersion:         "",
 	KernelPatchVersion:        "",
-	//ClusterVersion:            "",
-	//ClusterVersionMajorMinor:  "",
-	ClusterUpgradeInfo: make(map[string]nodeUpgradeVersion),
-	UpdateVendor:       "",
-	PushSecretName:     "",
-	OSImageURL:         "",
-	Node:               nodes{list: &unstructured.UnstructuredList{}, count: 0xDEADBEEF},
-	Proxy:              proxyConfiguration{},
+	ClusterVersion:            "",
+	ClusterVersionMajorMinor:  "",
+	ClusterUpgradeInfo:        make(map[string]nodeUpgradeVersion),
+	UpdateVendor:              "",
+	PushSecretName:            "",
+	OSImageURL:                "",
+	Node:                      nodes{list: &unstructured.UnstructuredList{}, count: 0xDEADBEEF},
+	Proxy:                     proxyConfiguration{},
 	GroupName: resourceGroupName{
 		DriverBuild:            "driver-build",
 		DriverContainer:        "driver-container",
@@ -108,6 +110,7 @@ var runInfo = runtimeInformation{
 }
 
 func logRuntimeInformation() {
+	log.Info("Runtime Information", "OnOCP", runInfo.OnOCP)
 	log.Info("Runtime Information", "OperatingSystemMajor", runInfo.OperatingSystemMajor)
 	log.Info("Runtime Information", "OperatingSystemMajorMinor", runInfo.OperatingSystemMajorMinor)
 	log.Info("Runtime Information", "OperatingSystemDecimal", runInfo.OperatingSystemDecimal)
@@ -125,6 +128,10 @@ func logRuntimeInformation() {
 func getRuntimeInformation(r *SpecialResourceReconciler) {
 
 	var err error
+	log.Info("Get OpenShift version")
+	runInfo.OnOCP, err = checkOnOCP()
+	exit.OnError(errs.Wrap(err, "Failed to get OCP version"))
+
 	log.Info("Get Node List")
 	runInfo.Node.list, err = cacheNodes(r, false)
 	exit.OnError(errs.Wrap(err, "Failed to cache nodes"))
@@ -141,25 +148,25 @@ func getRuntimeInformation(r *SpecialResourceReconciler) {
 	runInfo.KernelPatchVersion, err = getKernelPatchVersion()
 	exit.OnError(errs.Wrap(err, "Failed to get kernel patch version"))
 
-	//log.Info("Get Cluster Version")
-	//runInfo.ClusterVersion, runInfo.ClusterVersionMajorMinor, err = getClusterVersion(r)
-	//exit.OnError(errs.Wrap(err, "Failed to get cluster version"))
+	log.Info("Get Cluster Version")
+	runInfo.ClusterVersion, runInfo.ClusterVersionMajorMinor, err = getClusterVersion(r)
+	warnOnK8sFailOnOCP(err, "Failed to get cluster version")
 
 	log.Info("Get Upgrade Info")
 	runInfo.ClusterUpgradeInfo, err = getUpgradeInfo()
 	exit.OnError(errs.Wrap(err, "Failed to get upgrade info"))
 
-	//log.Info("Get Push Secret Name")
-	//runInfo.PushSecretName, err = retryGetPushSecretName(r)
-	//exit.OnError(errs.Wrap(err, "Failed to get push secret name"))
+	log.Info("Get Push Secret Name")
+	runInfo.PushSecretName, err = retryGetPushSecretName(r)
+	warnOnK8sFailOnOCP(err, "Failed to get push secret name")
 
-	//log.Info("Get OS Image URL")
-	//runInfo.OSImageURL, err = getOSImageURL(r)
-	//exit.OnError(errs.Wrap(err, "Failed to get OSImageURL"))
+	log.Info("Get OS Image URL")
+	runInfo.OSImageURL, err = getOSImageURL(r)
+	warnOnK8sFailOnOCP(err, "Failed to get OSImageURL")
 
-	//log.Info("Get Proxy Configuration")
-	//runInfo.Proxy, err = getProxyConfiguration(r)
-	//exit.OnError(errs.Wrap(err, "Failed to get Proxy Configuration"))
+	log.Info("Get Proxy Configuration")
+	runInfo.Proxy, err = getProxyConfiguration(r)
+	warnOnK8sFailOnOCP(err, "Failed to get Proxy Configuration")
 
 	r.specialresource.DeepCopyInto(&runInfo.SpecialResource)
 }
@@ -185,6 +192,21 @@ func getOperatingSystem() (string, string, string, error) {
 	}
 
 	return osversion.RenderOperatingSystem(nodeOSrel, nodeOSmaj, nodeOSmin)
+}
+
+func checkOnOCP() (bool, error) {
+	var found bool
+	// Assuming all nodes are running the same openshift version
+	for _, node := range runInfo.Node.list.Items {
+		labels := node.GetLabels()
+
+		// Check if there is a label from NFD for OPENSHIFT_VERSION
+		key := "feature.node.kubernetes.io/system-os_release.OPENSHIFT_VERSION"
+		_, found := labels[key]
+		return found, nil
+	}
+
+	return found, nil
 }
 
 func getKernelFullVersion() (string, error) {
@@ -215,12 +237,9 @@ func getKernelFullVersion() (string, error) {
 func getKernelPatchVersion() (string, error) {
 
 	version := strings.Split(runInfo.KernelFullVersion, "-")
-	log.Info(fmt.Sprintf("getKernelPatchVersion: version length: %d", len(version)))
 	// Happens only if kernel full version has no patch version sep by "-"
 	if len(version) == 1 {
 		short := strings.Split(runInfo.KernelFullVersion, ".")
-		log.Info(fmt.Sprintf("getKernelPatchVersion: short length: %d", len(short)))
-		log.Info(fmt.Sprintf(runInfo.KernelFullVersion))
 		return short[0] + "." + short[1] + "." + short[2], nil
 	}
 
@@ -452,4 +471,14 @@ func setupContainersProxy(containers []interface{}) error {
 	}
 
 	return nil
+}
+
+func warnOnK8sFailOnOCP(err error, message string) {
+	if err != nil {
+		if runInfo.OnOCP == true {
+			exit.OnError(errs.Wrap(err, message))
+		} else {
+			log.Info(fmt.Sprintf("Warning: %s. If running in vanilla k8s this can be ignored", message))
+		}
+	}
 }

@@ -48,6 +48,8 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1,trivialVersions=true"
 
+# To disable the creation of the ServiceMonitor in the case that
+# the Prometheus operator is not installed, set PROMETHEUS to a non-zero value
 PROMETHEUS ?= 0
 
 
@@ -96,7 +98,6 @@ manifests: manifests-gen kustomize configure
 deploy: manifests
 	$(KUSTOMIZE) build config/namespace | kubectl apply -f -
 	$(shell sleep 5)
-	kubectl create secret tls special-resource-operator-tls -n openshift-special-resource-operator --cert=certs/tls.crt --key=certs/tls.key
 	$(KUSTOMIZE) build config/cr | kubectl apply -f -
 
 # If the CRD is deleted before the CRs the CRD finalizer will hang forever

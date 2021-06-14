@@ -45,7 +45,6 @@ func cacheNodes(r *SpecialResourceReconciler, force bool) (*unstructured.Unstruc
 	// more nodes join the cluster.
 	cached := int64(len(runInfo.Node.list.Items))
 
-	log.Info("Cached node list:", "length", cached)
 	if cached == runInfo.Node.count && !force {
 		return runInfo.Node.list, nil
 	}
@@ -61,7 +60,7 @@ func cacheNodes(r *SpecialResourceReconciler, force bool) (*unstructured.Unstruc
 	if len(r.specialresource.Spec.Node.Selector) > 0 {
 		opts = append(opts, client.MatchingLabels{r.specialresource.Spec.Node.Selector: "true"})
 	} else {
-		opts = append(opts, client.MatchingLabels{"node-role.kubernetes.io/node": ""})
+		opts = append(opts, client.MatchingLabels{"node-role.kubernetes.io/worker": ""})
 	}
 
 	err := r.List(context.TODO(), runInfo.Node.list, opts...)
