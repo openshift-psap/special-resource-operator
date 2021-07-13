@@ -105,7 +105,7 @@ generate: controller-gen
 
 # Build the container image
 local-image-build: patch helm-lint helm-repo-index test generate manifests-gen
-	podman build -f Dockerfile.ubi8 --no-cache . -t $(IMG)
+	podman build -t $(IMG) -f Dockerfile.ubi8 --no-cache .
 
 # Push the container image
 local-image-push:
