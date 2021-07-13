@@ -75,6 +75,7 @@ spec:
         runAsGroup: 499
         runAsNonRoot: true
         runAsUser: 499
+      serviceAccountName: special-resource-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
       - name: special-resource-operator-tls

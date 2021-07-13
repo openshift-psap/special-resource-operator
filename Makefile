@@ -81,7 +81,7 @@ manifests-gen: manifests kustomize configure
 	cd $@; rm -f *.yaml
 	cd $@; ( $(KUSTOMIZE) build ../config/namespace && echo "---" && $(KUSTOMIZE) build ../config/default$(SUFFIX) ) | $(CSPLIT)
 	cd manifests; bash ../scripts/rename.sh
-	cd manifests; $(KUSTOMIZE) build ../config/cr > 0016_specialresource_special-resource-preamble.yaml
+	cd manifests; $(KUSTOMIZE) build ../config/cr > 0017_specialresource_special-resource-preamble.yaml
 
 # SRO specific configuration to set namespace of all manifests
 configure:
