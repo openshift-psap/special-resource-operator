@@ -63,16 +63,16 @@ spec:
           value: 0.0.1-snapshot
         - name: SSL_CERT_DIR
           value: /etc/pki/tls/certs
-        image: quay.io/openshift-psap/special-resource-operator:ping-ping
+        image: quay.io/openshift-psap/special-resource-operator:sign-image
         imagePullPolicy: Always
         name: manager
         resources:
           limits:
             cpu: 300m
-            memory: 300Mi
+            memory: 500Mi
           requests:
             cpu: 300m
-            memory: 300Mi
+            memory: 500Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

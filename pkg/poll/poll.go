@@ -14,6 +14,8 @@ import (
 	"github.com/openshift-psap/special-resource-operator/pkg/clients"
 	"github.com/openshift-psap/special-resource-operator/pkg/color"
 	"github.com/openshift-psap/special-resource-operator/pkg/exit"
+	"github.com/openshift-psap/special-resource-operator/pkg/warn"
+
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -26,7 +28,7 @@ import (
 
 var (
 	RetryInterval = time.Second * 5
-	Timeout       = time.Second * 15
+	Timeout       = time.Second * 300
 	log           logr.Logger
 )
 
@@ -43,14 +45,13 @@ func init() {
 	waitFor["DaemonSet"] = ForDaemonSet
 	waitFor["BuildConfig"] = ForBuild
 	waitFor["Secret"] = ForSecret
+	waitFor["CustomResourceDefinition"] = ForCRD
+	waitFor["Job"] = ForJob
+
 	log = zap.New(zap.UseDevMode(true)).WithName(color.Print("wait", color.Brown))
 }
 
 type statusCallback func(obj *unstructured.Unstructured) bool
-
-func init() {
-
-}
 
 func ForResourceAvailability(obj *unstructured.Unstructured) error {
 
@@ -65,6 +66,24 @@ func ForResourceAvailability(obj *unstructured.Unstructured) error {
 			return false, err
 		}
 		return true, nil
+	})
+	return err
+}
+
+func ForResourceUnavailability(obj *unstructured.Unstructured) error {
+
+	found := obj.DeepCopy()
+	err := wait.Poll(RetryInterval, Timeout, func() (done bool, err error) {
+		err = clients.Interface.Get(context.TODO(), types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}, found)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Info("Waiting done for deletion of ", "Namespace", obj.GetNamespace(), "Name", obj.GetName())
+				return true, nil
+			}
+			return true, err
+		}
+		log.Info("Waiting for deletion of ", "Namespace", obj.GetNamespace(), "Name", obj.GetName())
+		return false, nil
 	})
 	return err
 }
@@ -114,15 +133,16 @@ func makeStatusCallback(obj *unstructured.Unstructured, status interface{}, fiel
 
 func ForResource(obj *unstructured.Unstructured) error {
 
-	log.Info("ForResource", "Kind", obj.GetKind())
-
 	var err error
 	// Wait for general availability, Pods Complete, Running
 	// DaemonSet NumberUnavailable == 0, etc
 	if wait, ok := waitFor[obj.GetKind()]; ok {
+		log.Info("ForResource", "Kind", obj.GetKind())
 		if err = wait(obj); err != nil {
 			return errors.Wrap(err, "Waiting too long for resource")
 		}
+	} else {
+		warn.OnError(errors.New("No wait function registered for Kind: " + obj.GetKind()))
 	}
 
 	return nil
@@ -132,12 +152,57 @@ func ForSecret(obj *unstructured.Unstructured) error {
 	return ForResourceAvailability(obj)
 }
 
+func ForCRD(obj *unstructured.Unstructured) error {
+
+	clients.Interface.Invalidate()
+	// Lets wait some time for the API server to register the new CRD
+	if err := ForResourceAvailability(obj); err != nil {
+		return err
+	}
+
+	clients.Interface.ServerGroups()
+	return nil
+}
+
 func ForPod(obj *unstructured.Unstructured) error {
 	if err := ForResourceAvailability(obj); err != nil {
 		return err
 	}
 	callback := makeStatusCallback(obj, "Succeeded", "status", "phase")
 	return ForResourceFullAvailability(obj, callback)
+}
+
+func ForJob(obj *unstructured.Unstructured) error {
+	if err := ForResourceAvailability(obj); err != nil {
+		return err
+	}
+
+	return ForResourceFullAvailability(obj, func(obj *unstructured.Unstructured) bool {
+
+		conditions, found, err := unstructured.NestedSlice(obj.Object, "status", "conditions")
+		warn.OnError(err)
+
+		if !found {
+			return false
+		}
+
+		for _, condition := range conditions {
+
+			status, found, err := unstructured.NestedString(condition.(map[string]interface{}), "status")
+			exit.OnErrorOrNotFound(found, err)
+
+			if status == "True" {
+				stype, found, err := unstructured.NestedString(condition.(map[string]interface{}), "type")
+				exit.OnErrorOrNotFound(found, err)
+
+				if stype == "Complete" {
+					return true
+				}
+			}
+
+		}
+		return false
+	})
 }
 
 func ForDaemonSetCallback(obj *unstructured.Unstructured) bool {

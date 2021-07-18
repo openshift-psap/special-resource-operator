@@ -7,6 +7,17 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - '*'
+  resources:
+  - cronjobs
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - ""
   resources:
   - nodes/finalizers
@@ -43,10 +54,6 @@ rules:
   - update
 - apiGroups:
   - '*'
-  resources:
-  - cronjobs
-  verbs:
-  - get
 - apiGroups:
   - '*'
   resources:
@@ -64,14 +71,21 @@ rules:
   resources:
   - imagepolicies
   verbs:
+  - delete
   - get
+  - update
 - apiGroups:
   - '*'
   resources:
   - jobs
   verbs:
   - create
+  - delete
   - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - '*'
   resources:

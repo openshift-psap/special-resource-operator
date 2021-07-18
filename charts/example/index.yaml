@@ -1,11 +1,34 @@
 apiVersion: v1
 entries:
+  connaisseur:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2021-07-14T10:15:56.871351218Z"
+    description: A Helm chart for the Connaisseur Admission Controller
+    digest: 40705f75a39dc80b0c91c4e07df1a4b8036755dfd07afd4db95d7af6ae329d3c
+    name: connaisseur
+    type: application
+    urls:
+    - file:///charts/example/connaisseur-0.2.0.tgz
+    version: 0.2.0
+  multi-build:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2021-07-14T10:15:56.871579423Z"
+    description: Showcase how to use multiple Builds with different DTKs
+    digest: 1a28bb9986709170456a9b5c8b98ba715c4cf6183576a26536030f6b75319440
+    icon: https://avatars.githubusercontent.com/u/55542927
+    name: multi-build
+    type: application
+    urls:
+    - file:///charts/example/multi-build-0.0.1.tgz
+    version: 0.0.1
   ping-pong:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2021-06-30T12:41:48.588977365-04:00"
+    created: "2021-07-14T10:15:56.87188486Z"
     description: Simple go app to showcase cert-manager intergration
-    digest: 9944caf95c6e881f07fb3709e0006c1e9e9347d9c35cf10c28f0edf74dcb30ba
+    digest: caca2a3942d6c291dcfa9d78b373671e05c4cb9e3247bfd1c033058f88a5d1ba
     icon: https://avatars.githubusercontent.com/u/55542927
     name: ping-pong
     type: application
@@ -15,13 +38,13 @@ entries:
   simple-kmod:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2021-06-30T12:41:48.589158231-04:00"
+    created: "2021-07-14T10:15:56.872060054Z"
     description: Simple kmod will deploy a simple kmod driver-container
-    digest: 26dc92d07de35113d0e00da1b33b5f9c0f6e5d6ee6296159de44a02d310964a6
+    digest: 6de1af9c9eade2e10f33408357b654dfdf9855cdb36482bf246a20fabdfb847c
     icon: https://avatars.githubusercontent.com/u/55542927
     name: simple-kmod
     type: application
     urls:
     - file:///charts/example/simple-kmod-0.0.1.tgz
     version: 0.0.1
-generated: "2021-06-30T12:41:48.588643497-04:00"
+generated: "2021-07-14T10:15:56.870310715Z"

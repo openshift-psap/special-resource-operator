@@ -9,6 +9,79 @@ metadata:
   name: special-resource-manager-role
 rules:
 - apiGroups:
+  - '*'
+  resources:
+  - cronjobs
+  verbs:
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - '*'
+  resources:
+  - daemonsets
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - deployments
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - imagepolicies
+  verbs:
+  - delete
+  - get
+  - update
+- apiGroups:
+  - '*'
+  resources:
+  - jobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - '*'
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - pods
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - replicacontrollers
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - replicasets
+  verbs:
+  - get
+- apiGroups:
+  - '*'
+  resources:
+  - statefulsets
+  verbs:
+  - get
+- apiGroups:
   - acme.cert-manager.io
   resources:
   - challenges
@@ -67,6 +140,7 @@ rules:
   - delete
   - get
   - list
+  - patch
   - update
   - watch
 - apiGroups:
@@ -78,8 +152,18 @@ rules:
   - delete
   - get
   - list
+  - patch
   - update
   - watch
+- apiGroups:
+  - admissionregistration.k8s.io/v1beta1
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - create
+  - delete
+  - list
+  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -165,6 +249,13 @@ rules:
   - get
   - list
   - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - list
   - watch
 - apiGroups:
   - build.openshift.io
@@ -360,6 +451,12 @@ rules:
   - get
   - list
 - apiGroups:
+  - connaisseur.policy
+  resources:
+  - imagepolicies
+  verbs:
+  - create
+- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
@@ -501,6 +598,8 @@ rules:
   - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""
