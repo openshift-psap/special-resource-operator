@@ -1,68 +1,62 @@
 
-# find or download controller-gen
-# download controller-gen if necessary
-controller-gen:
-ifeq (, $(shell which controller-gen))
-	@{ \
-	set -e ;\
-	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$CONTROLLER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.5.0 ;\
-	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
-	}
-CONTROLLER_GEN=$(GOBIN)/controller-gen
-else
-CONTROLLER_GEN=$(shell which controller-gen)
-endif
+# SRO-specific options
 
-kustomize:
-ifeq (, $(shell which kustomize))
-	@{ \
-	set -e ;\
-	KUSTOMIZE_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$KUSTOMIZE_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get sigs.k8s.io/kustomize/kustomize/v3@v3.5.4 ;\
-	rm -rf $$KUSTOMIZE_GEN_TMP_DIR ;\
-	}
-KUSTOMIZE=$(GOBIN)/kustomize
-else
-KUSTOMIZE=$(shell which kustomize)
-endif
+SPECIALRESOURCE  ?= driver-container-base
+NAMESPACE        ?= openshift-special-resource-operator
+PULLPOLICY       ?= IfNotPresent
+TAG              ?= $(shell git branch --show-current)
+IMAGE            ?= quay.io/openshift-psap/special-resource-operator:$(TAG)
+CSPLIT           ?= csplit - --prefix="" --suppress-matched --suffix-format="%04d.yaml"  /---/ '{*}' --silent
+YAMLFILES        ?= $(shell  find manifests charts -name "*.yaml"  -not \( -path "charts/lustre/lustre-aws-fsx-0.0.1/csi-driver/*" -prune \)  -not \( -path "charts/*/shipwright-*/*" -prune \) -not \( -path "charts/experimental/*" -prune \) )
+PLATFORM         ?= ""
+SUFFIX           ?= $(shell if [ ${PLATFORM} == "k8s" ]; then echo "-${PLATFORM}"; fi)
+
+export PATH := go/bin:$(PATH)
+
+patch:
+	cp .patches/options.patch.go vendor/github.com/google/go-containerregistry/pkg/crane/.
+	cp .patches/getter.patch.go vendor/helm.sh/helm/v3/pkg/getter/.
+#	cp .patches/zapr.patch.go vendor/github.com/go-logr/zapr/.
+
+kube-lint: kube-linter
+	$(KUBELINTER) lint $(YAMLFILES)
+
+lint: golangci-lint
+	$(GOLANGCILINT) run -v --timeout 5m0s
+
+verify: fmt vet
+unit:
+	@echo "TODO UNIT TEST"
+
+go-deploy-manifests: manifests-gen
+	go run test/deploy/deploy.go -path ./manifests
+
+go-undeploy-manifests:
+	go run test/undeploy/undeploy.go -path ./manifests
+
+test-e2e-upgrade: go-deploy-manifests
+
+test-e2e:
+	for d in basic; do \
+          KUBERNETES_CONFIG="$(KUBECONFIG)" go test -v -timeout 40m ./test/e2e/$$d -ginkgo.v -ginkgo.noColor -ginkgo.failFast || exit; \
+        done
 
 
-golangci-lint:
-ifeq (, $(shell which golangci-lint))
-	@{ \
-	set -e ;\
-	GOLINT_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$GOLINT_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0 ;\
-	rm -rf $$GOLINT_GEN_TMP_DIR ;\
-	}
-GOLANGCILINT=$(GOBIN)/golangci-lint
-else
-GOLANGCILINT=$(shell which golangci-lint)
-endif
-
+# Download kube-linter locally if necessary
+KUBELINTER = $(shell pwd)/bin/kube-linter
 kube-linter:
-ifeq (, $(shell which kube-linter))
-	@{ \
-	set -e ;\
-	KUBELINTER_GEN_TMP_DIR=$$(mktemp -d) ;\
-	cd $$KUBELINTER_GEN_TMP_DIR ;\
-	go mod init tmp ;\
-	go get golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20210328011908-cb34f2cc447f ;\
-	rm -rf $$KUBELINTER_GEN_TMP_DIR ;\
-	}
-KUBELINTER=$(GOBIN)/kube-linter
-else
-KUBELINTER=$(shell which kube-linter)
-endif
+	$(call go-get-tool,$(KUBELINTER),golang.stackrox.io/kube-linter/cmd/kube-linter@v0.0.0-20210328011908-cb34f2cc447f)
 
-update-bundle: 
+# Download golangci-lint locally if necessary
+GOLANGCILINT = $(shell pwd)/bin/golangci-lint
+golangci-lint:
+	$(call go-get-tool,$(GOLANGCILINT),github.com/golangci/golangci-lint/cmd/golangci-lint@v1.33.0)
+
+# Additional bundle options for ART
+DEFAULT_CHANNEL="4.9"
+CHANNELS="4.9"
+
+update-bundle:
 	mv $$(find bundle -name image-references) bundle/image-references
 	rm -rf bundle/4.*/manifests bundle/4.*/metadata
 	$(MAKE) bundle DEFAULT_CHANNEL=$(DEFAULT_CHANNEL) VERSION=$(VERSION) IMAGE=$(IMAGE)
@@ -71,4 +65,3 @@ update-bundle:
 	mv bundle/metadata bundle/$(DEFAULT_CHANNEL)/metadata
 	sed 's#bundle/##g' bundle.Dockerfile | head -n -1 > bundle/$(DEFAULT_CHANNEL)/bundle.Dockerfile
 	mv bundle/image-references bundle/$(DEFAULT_CHANNEL)/manifests/image-references
-
